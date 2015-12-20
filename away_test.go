@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -24,8 +23,8 @@ import (
 //
 // And a function to clean up these directories at the conclusion of
 // the test.
-func mkTestDir(paths []string) (src, tgt string, cleanup func()) {
-	root := path.Join(os.TempDir(), "away"+strconv.Itoa(rand.Int()))
+func mkTestDir(t *testing.T, paths []string) (src, tgt string, cleanup func()) {
+	root := path.Join(os.TempDir(), "away"+strconv.Itoa(rand.Intn(500)))
 	src = path.Join(root, "src")
 	tgt = path.Join(root, "tgt")
 
@@ -48,22 +47,97 @@ func mkTestDir(paths []string) (src, tgt string, cleanup func()) {
 			info, _ := os.Lstat(p)
 			if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 				dest, _ := os.Readlink(p)
-				fmt.Printf("%s -> %s\n", p, dest)
+				t.Logf("%s -> %s\n", p, dest)
 			} else {
-				fmt.Printf("%s\n", p)
+				t.Logf("%s\n", p)
 			}
 			return nil
 		}
+		t.Logf("Test directory:")
 		filepath.Walk(root, lister)
 		// Helper to cleanup the directory
 		os.RemoveAll(root)
 	}
 }
 
+func TestFileDiscovery(t *testing.T) {
+	files := []string{"A", "B/Bchild"}
+	src, tgt, cleanup := mkTestDir(t, files)
+	defer cleanup()
+	away := NewAway(src, tgt)
+
+	res, err := away.walk(src)
+	if err != nil {
+		t.Error("Error occurred during the walk, must be raining")
+	}
+	for _, f := range files {
+		_, ok := res[f]
+		if !ok {
+			t.Errorf("File %s was not in discovered list", f)
+		}
+	}
+}
+
+func TestStow(t *testing.T) {
+	files := []string{"A", "B"}
+	src, tgt, cleanup := mkTestDir(t, files)
+	defer cleanup()
+	away := NewAway(src, tgt)
+	away.Plan()
+	err := away.Stow()
+	if err != nil {
+		t.Fatalf("Error during test stow: %s", err)
+	}
+
+	srcMap, _ := away.walk(src)
+	tgtMap, _ := away.walk(tgt)
+	t.Logf("%v", srcMap)
+	t.Logf("%v", tgtMap)
+	if len(srcMap) != len(tgtMap) {
+		t.Error("They don't match up..")
+	}
+	for f, _ := range srcMap {
+		_, ok := tgtMap[f]
+		if !ok {
+			t.Errorf("File %s missing from the target", f)
+		}
+	}
+}
+
 func TestFilePlan(t *testing.T) {
-	var files = []string{"A", "B"}
-	src, tgt, cleanup := mkTestDir(files)
+	files := []string{"A", "B"}
+	src, tgt, cleanup := mkTestDir(t, files)
 	defer cleanup()
 	os.Symlink(filepath.Join(src, "A"), filepath.Join(tgt, "A"))
-	t.FailNow()
+}
+
+func TestIsEffectiveSymlink(t *testing.T) {
+	files := []string{"A", "B"}
+	src, tgt, cleanup := mkTestDir(t, files)
+	defer cleanup()
+
+	linkTarget := filepath.Join(src, "A")
+	os.Symlink(linkTarget, filepath.Join(tgt, "A"))
+	// Correct situation, link points to the same thing as check (think re-Stow)
+	if !IsEffectiveLink(filepath.Join(tgt, "A"), linkTarget) {
+		t.Errorf("Expected symlink target %s to match", linkTarget)
+	}
+
+	// Regular file
+	ioutil.WriteFile(filepath.Join(tgt, "C"), []byte("regular file"), 0444)
+	if IsEffectiveLink(filepath.Join(tgt, "C"), filepath.Join(src, "C")) {
+		t.Error("No way that's a symlink")
+	}
+
+	// Directory
+	os.Mkdir(filepath.Join(tgt, "D"), 0775)
+	if IsEffectiveLink(filepath.Join(tgt, "D"), filepath.Join(src, "D")) {
+		t.Error("No way that's a symlink")
+	}
+
+	// Non-existent file
+	if IsEffectiveLink(filepath.Join(tgt, "E"), filepath.Join(src, "E")) {
+		t.Error("No way that's a symlink")
+	}
+
 }
