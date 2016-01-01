@@ -1,11 +1,13 @@
 package main
 
 import (
-	"github.com/codegangsta/cli"
-	"github.com/juju/errors"
+	"fmt"
 )
 
 func main() {
-	cli.NewApp()
-	errors.New("wat")
+	source := "."
+	dest := "/tmp/dest"
+	plan, _ := NewPlan(source, dest, PlanOptions{})
+	plan.FindNodes()
+	fmt.Println(Stowaway{}.Describe(plan))
 }

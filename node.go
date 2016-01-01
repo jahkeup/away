@@ -38,8 +38,13 @@ func NewNode(path string) (node *Node, err error) {
 
 // Determine Node's path in terms of the plan
 func (n *Node) PlannedPath(plan *Plan) string {
-	relative, _ := filepath.Rel(plan.Src, n.Path)
-	return filepath.Join(plan.Dest, relative)
+	return filepath.Join(plan.Dest, n.Rel(plan.Src))
+}
+
+// Resolve a relative path for this node from path
+func (n *Node) Rel(path string) string {
+	rel, _ := filepath.Rel(path, n.Path)
+	return rel
 }
 
 // Is planned path a conflict?
