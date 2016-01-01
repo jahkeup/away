@@ -28,6 +28,17 @@ func TestNodePathPlanning(t *testing.T) {
 	}
 }
 
+func TestNodeRel(t *testing.T) {
+	path := "A/file"
+	src, _, cleanup := mkTestDir(t, []string{path})
+	defer cleanup()
+
+	node, _ := NewNode(filepath.Join(src, path))
+	if node.Rel(src) != path {
+		t.Error("Node should have returned its relative path", node.Rel(src))
+	}
+}
+
 func TestNodeCheck(t *testing.T) {
 	path := "file"
 
