@@ -7,7 +7,9 @@ import (
 func main() {
 	source := "."
 	dest := "/tmp/dest"
-	plan, _ := NewPlan(source, dest, PlanOptions{})
+	plan, _ := NewPlan(source, dest, PlanOptions{
+		LinkFilesOnly: true,
+	})
 	plan.FindNodes()
-	fmt.Println(Stowaway{}.Describe(plan))
+	fmt.Println(string(Stowaway{}.Describe(plan)))
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -24,6 +25,13 @@ func NewPlan(src, dest string, options PlanOptions) (*Plan, error) {
 	if !DirExist(src) || !DirExist(dest) {
 		return &Plan{}, errors.New("Source or destination directory does not exist")
 	}
+	if !filepath.IsAbs(src) {
+		src, _ = filepath.Abs(src)
+	}
+	if !filepath.IsAbs(dest) {
+		dest, _ = filepath.Abs(dest)
+	}
+
 	return &Plan{
 		Src:     src,
 		Dest:    dest,
@@ -43,17 +51,17 @@ func (p *Plan) walker(path string, info os.FileInfo, ferr error) (err error) {
 		return err
 	}
 
-	// Delve deeper if this directory exists at the destination
-	if info.IsDir() && (ErrNodeExists == node.CheckNode(p)) {
-		return
-	}
-
 	// Store directories as nodes and skip its children unless the user
 	// wants to only link in files.
 	if info.IsDir() {
+		fmt.Println(node.PlannedPath(p))
+		if node.CheckNode(p) == ErrNodeExists {
+			return nil
+		}
 		if p.Options.LinkFilesOnly {
 			return err
 		}
+		fmt.Println("Skipping this directory", path)
 		err = filepath.SkipDir
 	}
 
@@ -68,4 +76,8 @@ func DirExist(path string) bool {
 		return false
 	}
 	return stat.IsDir()
+}
+
+func (p *Plan) String() string {
+	return fmt.Sprintf("#<Plan Src: %s, Dest: %s, Nodes: %s>", p.Src, p.Dest, p.Nodes)
 }
