@@ -54,10 +54,10 @@ type Unputaway struct{}
 func (e Unputaway) Execute(p *Plan) error {
 	for _, n := range p.Nodes {
 		// Node should pass checks if its to be removed by Unputaway
-		if err := n.CheckNode(p); err != nil {
+		if err := n.CheckNode(p); err == nil {
 			os.Remove(n.PlannedPath(p))
 		} else {
-			log.Warnf("SKIP %s - link is not managed by this away\n", n.Path)
+			log.Warnf("SKIP %s - link is not managed by this away: %s\n", n.PlannedPath(p), err)
 		}
 	}
 	return nil
