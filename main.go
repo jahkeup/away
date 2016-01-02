@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -10,6 +11,10 @@ import (
 )
 
 func main() {
+	Away(os.Args, os.Stdout)
+}
+
+func Away(args []string, out io.Writer) {
 	app := cli.NewApp()
 	app.Name = "away"
 	app.Author = "Jacob Vallejo"
@@ -44,33 +49,33 @@ func main() {
 
 		// Run for all sources given
 		for _, source := range c.Args() {
-			err := Process(source, c.String("dest"), executor, options)
+			processed, err := Process(source, c.String("dest"), executor, options)
+			fmt.Fprint(out, processed)
 			if err != nil {
 				log.Error(err)
 				return // bail on errors
 			}
 		}
 	}
-	app.Run(os.Args)
+	app.Run(args)
 }
 
 // Run the operation for a source that will execute using dest as the
 // target destination
-func Process(source, dest string, exec Executor, options PlanOptions) (err error) {
+func Process(source, dest string, exec Executor, options PlanOptions) (output string, err error) {
 	plan, err := NewPlan(source, dest, options)
 	if err != nil {
-		return err
+		return output, err
 	}
 	err = plan.FindNodes()
 	if err != nil {
-		return err
+		return output, err
 	}
-
+	output = exec.Describe(plan)
 	if options.DryRun {
-		fmt.Println(exec.Describe(plan))
-		return
+		return output, nil
 	}
-	return exec.Execute(plan)
+	return output, exec.Execute(plan)
 }
 
 // Parse user string for filemode

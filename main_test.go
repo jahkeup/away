@@ -79,19 +79,39 @@ func TestProcessPutaway(t *testing.T) {
 	src, dest, cleanup := mkTestDir(t, paths)
 	defer cleanup()
 
-	err := Process(src, dest, Putaway{}, PlanOptions{})
+	out, err := Process(src, dest, Putaway{}, PlanOptions{DryRun: true})
+	t.Log(out)
 	if err != nil {
 		t.Error(err)
 	}
+
+	// TODO: Check that nothing was done
+
+	out, err = Process(src, dest, Putaway{}, PlanOptions{})
+	t.Log(out)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// TODO: Check the resulting filesystem
 }
 
 func TestProcessPutawayDeepLink(t *testing.T) {
 	paths := []string{"A/B/c", "D/C/f", "A/F/e"}
 	src, dest, cleanup := mkTestDir(t, paths)
 	defer cleanup()
+	out, err := Process(src, dest, Putaway{}, PlanOptions{LinkFilesOnly: true, DryRun: true})
+	t.Log(out)
+	if err != nil {
+		t.Error("Error during a dry run..")
+	}
+	// TODO: Check that nothing was done
 
-	err := Process(src, dest, Putaway{}, PlanOptions{LinkFilesOnly: true})
+	out, err = Process(src, dest, Putaway{}, PlanOptions{LinkFilesOnly: true})
+	t.Log(out)
 	if err != nil {
 		t.Error(err)
 	}
+
+	// TODO: Check the resulting filesystem
 }

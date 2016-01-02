@@ -25,7 +25,7 @@ func (s Putaway) Execute(p *Plan) error {
 	for _, n := range p.Nodes {
 		dir := filepath.Dir(n.Rel(p.Src))
 		if dir != "." && p.Options.LinkFilesOnly {
-			os.MkdirAll(dir, p.Options.DirMode)
+			os.MkdirAll(filepath.Join(p.Dest, dir), p.Options.DirMode)
 		}
 		os.Symlink(n.Path, n.PlannedPath(p))
 	}
@@ -40,7 +40,7 @@ func (s Putaway) Describe(p *Plan) string {
 	for _, n := range p.Nodes {
 		dir := filepath.Dir(n.Rel(p.Src))
 		if dir != "." && p.Options.LinkFilesOnly {
-			fmt.Fprintf(buf, "MKDIR: %s\n", dir)
+			fmt.Fprintf(buf, "MKDIR: %s\n", filepath.Join(p.Dest, dir))
 		}
 		fmt.Fprintf(buf, "LINK:  %s => %s\n", n.PlannedPath(p), n.Path)
 	}
