@@ -59,3 +59,39 @@ func mkTestDir(t *testing.T, paths []string) (src, tgt string, cleanup func()) {
 		os.RemoveAll(root)
 	}
 }
+
+func TestModeParse(t *testing.T) {
+	var mode os.FileMode = 0770
+	equivs := []string{"0770", "770"}
+	for _, v := range equivs {
+		m := parseFileMode(v)
+		if mode != m {
+			t.Errorf("Parsed mode %s from %s was not %s", m, v, mode)
+		}
+	}
+	if mode != parseFileMode("arst") {
+		t.Error("Didn't fallback on bad input")
+	}
+}
+
+func TestProcessPutaway(t *testing.T) {
+	paths := []string{"A/B/c", "D/C/f", "A/F/e"}
+	src, dest, cleanup := mkTestDir(t, paths)
+	defer cleanup()
+
+	err := Process(src, dest, Putaway{}, PlanOptions{})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestProcessPutawayDeepLink(t *testing.T) {
+	paths := []string{"A/B/c", "D/C/f", "A/F/e"}
+	src, dest, cleanup := mkTestDir(t, paths)
+	defer cleanup()
+
+	err := Process(src, dest, Putaway{}, PlanOptions{LinkFilesOnly: true})
+	if err != nil {
+		t.Error(err)
+	}
+}

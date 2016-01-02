@@ -11,6 +11,7 @@ import (
 type PlanOptions struct {
 	DryRun        bool
 	LinkFilesOnly bool
+	DirMode       os.FileMode
 }
 
 type Plan struct {
@@ -30,6 +31,11 @@ func NewPlan(src, dest string, options PlanOptions) (*Plan, error) {
 	}
 	if !filepath.IsAbs(dest) {
 		dest, _ = filepath.Abs(dest)
+	}
+
+	// If DirMode is not set, this defaults to 770
+	if options.DirMode == 0 {
+		options.DirMode = 0770
 	}
 
 	return &Plan{
@@ -54,14 +60,12 @@ func (p *Plan) walker(path string, info os.FileInfo, ferr error) (err error) {
 	// Store directories as nodes and skip its children unless the user
 	// wants to only link in files.
 	if info.IsDir() {
-		fmt.Println(node.PlannedPath(p))
 		if node.CheckNode(p) == ErrNodeExists {
 			return nil
 		}
 		if p.Options.LinkFilesOnly {
 			return err
 		}
-		fmt.Println("Skipping this directory", path)
 		err = filepath.SkipDir
 	}
 

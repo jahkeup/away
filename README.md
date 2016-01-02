@@ -1,8 +1,21 @@
-# Away - Go Stow
+# Away
 
+Away is a simplistic linking utility designed to operate in a similar
+fashion to GNU Stow. Unlike Stow, this program does not require Perl
+as its statically compiled.
 
-## Design
+## Running
 
-Much like Stow, Away plans what its going to do without modifying the
-filesystem and will return an error if the stow(away) can't be run
-successfully.
+```sh
+away .dotfiles/xmonad
+```
+
+## Compile
+
+The process is the usual for golang based utilities.
+
+```sh
+go get github.com/jahkeup/away
+
+go install github.com/jahkeup/away
+```
